@@ -10,7 +10,7 @@ import re
 from collections import namedtuple
 from typing import Final, Optional
 
-from aiohttp import ClientSession, ClientResponse
+from aiohttp import ClientResponse, ClientSession
 
 from .const import HUBSPACE_DEFAULT_USERAGENT
 
@@ -189,11 +189,7 @@ class HubSpaceAuth:
                 or datetime.datetime.now().timestamp() >= self.token_expiry
             ):
                 logger.debug("Token has not been generated or is expired")
-                self.__token = await self.generate_token(
-                    client, self.__refresh_token
-                )
-                self.token_expiry = (
-                    datetime.datetime.now().timestamp() + TOKEN_TIMEOUT
-                )
+                self.__token = await self.generate_token(client, self.__refresh_token)
+                self.token_expiry = datetime.datetime.now().timestamp() + TOKEN_TIMEOUT
                 logger.debug("Token has been successfully generated")
         return self.__token

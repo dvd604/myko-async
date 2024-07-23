@@ -5,8 +5,8 @@ import logging
 from contextlib import suppress
 from dataclasses import asdict
 from typing import Any, Final, Optional
-
-from aiohttp import ClientSession, ClientResponse
+import copy
+from aiohttp import ClientSession
 
 from .auth import HubSpaceAuth
 from .const import HUBSPACE_DEFAULT_USERAGENT
@@ -22,6 +22,11 @@ HUBSPACE_DEVICE_STATE: Final[str] = (
     "https://api2.afero.net/v1/accounts/{}/metadevices/{}/state"
 )
 HUBSPACE_DATA_HOST: Final[str] = "semantics2.afero.net"
+
+DEFAULT_HEADERS: Final[dict[str, str]] = {
+    "user-agent": HUBSPACE_DEFAULT_USERAGENT,
+    "accept-encoding": HUBSPACE_DEFAULT_ENCODING,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +47,11 @@ class HubSpaceConnection:
         the type "metadevice.device" from the API and referenced by their ID.
     """
 
-    def __init__(self, username: str, password: str, websession: Optional[ClientSession] = None):
+    def __init__(
+        self, username: str, password: str, websession: Optional[ClientSession] = None
+    ):
         self._auth = HubSpaceAuth(username, password)
         self.client = websession or ClientSession()
-        self.client.headers.update(
-            {
-                "user-agent": HUBSPACE_DEFAULT_USERAGENT,
-                "accept-encoding": HUBSPACE_DEFAULT_ENCODING,
-            }
-        )
         self._account_id: Optional[str] = None
         self._devices: dict[str, HubSpaceDevice] = {}
         self._rooms: dict[str, HubSpaceRoom] = {}
@@ -99,13 +100,16 @@ class HubSpaceConnection:
         """Lookup the account ID associated with the login"""
         logger.debug("Querying API for account id")
         token = await self._auth.token(self.client)
-        headers = {
+        headers = get_headers(**{
             "authorization": f"Bearer {token}",
             "host": "api2.afero.net",
-        }
+        })
         response = await self.client.get(HUBSPACE_ACCOUNT_ID_URL, headers=headers)
         account_id = (
-            (await response.json()).get("accountAccess")[0].get("account").get("accountId")
+            (await response.json())
+            .get("accountAccess")[0]
+            .get("account")
+            .get("accountId")
         )
         return account_id
 
@@ -113,10 +117,10 @@ class HubSpaceConnection:
         """Query the API"""
         logger.debug("Querying API for all data")
         token = await self._auth.token(self.client)
-        headers = {
+        headers = get_headers(**{
             "authorization": f"Bearer {token}",
             "host": HUBSPACE_DATA_HOST,
-        }
+        })
         params = {"expansions": "state"}
         response = await self.client.get(
             HUBSPACE_DATA_URL.format(await self.account_id),
@@ -190,14 +194,14 @@ class HubSpaceConnection:
         logger.debug("Querying API for device [%s] states", device_id)
         url = HUBSPACE_DEVICE_STATE.format(await self.account_id, device_id)
         token = await self._auth.token(self.client)
-        headers = {
+        headers = get_headers(**{
             "authorization": f"Bearer {token}",
             "host": HUBSPACE_DATA_HOST,
-        }
+        })
         response = await self.client.get(url, headers=headers)
         response.raise_for_status()
         states = []
-        for state in await (response.json())["values"]:
+        for state in (await response.json())["values"]:
             try:
                 states.append(
                     HubSpaceState(
@@ -224,11 +228,11 @@ class HubSpaceConnection:
             "Update the device [%s] with new states: %s", device_id, new_states
         )
         token = await self._auth.token(self.client)
-        headers = {
+        headers = get_headers(**{
             "authorization": f"Bearer {token}",
             "host": HUBSPACE_DATA_HOST,
             "content-type": "application/json; charset=utf-8",
-        }
+        })
         payload_states = []
         for state in new_states:
             state.lastUpdateTime = int(datetime.datetime.now().timestamp())
@@ -245,3 +249,9 @@ class HubSpaceConnection:
         :param state: State to set. last_update_time will be updated to now
         """
         await self.set_device_states(device_id, [state])
+
+
+def get_headers(**kwargs):
+    headers = copy.copy(DEFAULT_HEADERS)
+    headers.update(kwargs)
+    return headers
