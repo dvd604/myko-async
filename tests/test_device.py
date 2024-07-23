@@ -26,6 +26,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "default_image",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -37,6 +38,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "default_image",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),
@@ -51,6 +53,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "ceiling-fan-snyder-park-icon",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -62,6 +65,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "ceiling-fan-snyder-park-icon",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),
@@ -76,6 +80,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "ceiling-fan-vinings-icon",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -87,6 +92,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "ceiling-fan-vinings-icon",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),
@@ -101,6 +107,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "ceiling-fan-chandra-icon",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -112,6 +119,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "ceiling-fan-chandra-icon",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),
@@ -126,6 +134,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "ceiling-fan-ac-cct-dardanus-icon",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -137,6 +146,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "ceiling-fan-ac-cct-dardanus-icon",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),
@@ -151,6 +161,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "ceiling-fan-slender-icon",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -162,6 +173,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "ceiling-fan-slender-icon",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),
@@ -176,6 +188,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "ceiling-fan-slender-icon",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -187,6 +200,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "ceiling-fan-slender-icon",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),
@@ -201,6 +215,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 "default_image": "a19-e26-color-cct-60w-smd-frosted-icon",
                 "friendly_name": "friendly_name",
                 "functions": ["functions!"],
+                "states": [],
             },
             device.HubSpaceDevice(
                 **{
@@ -212,6 +227,7 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                     "default_image": "a19-e26-color-cct-60w-smd-frosted-icon",
                     "friendly_name": "friendly_name",
                     "functions": ["functions!"],
+                    "states": [],
                 }
             ),
         ),

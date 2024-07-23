@@ -20,6 +20,7 @@ class HubSpaceState:
     :param functionInstance: Additional information about the function (ie, light-power).
         Default: None
     """
+
     functionClass: str
     value: Any
     lastUpdateTime: Optional[int] = None
@@ -36,6 +37,7 @@ class HubSpaceDevice:
     default_image: str
     friendly_name: str
     functions: list[dict]
+    states: list[HubSpaceState]
 
     def __hash__(self):
         return hash((self.id, self.friendly_name))
@@ -73,6 +75,16 @@ def get_hs_device(hs_device: dict[str, Any]) -> HubSpaceDevice:
     """Convert the HubSpace device definition into a HubSpaceDevice"""
     description = hs_device.get("description", {})
     device = description.get("device", {})
+    processed_states: list[HubSpaceState] = []
+    for state in hs_device.get("state", {}).get("values", []):
+        processed_states.append(
+            HubSpaceState(
+                functionClass=state.get("functionClass"),
+                value=state.get("value"),
+                lastUpdateTime=state.get("lastUpdateTime"),
+                functionInstance=state.get("functionInstance"),
+            )
+        )
     dev_dict = {
         "id": hs_device.get("id"),
         "device_id": hs_device.get("deviceId"),
@@ -82,5 +94,6 @@ def get_hs_device(hs_device: dict[str, Any]) -> HubSpaceDevice:
         "default_image": description.get("defaultImage"),
         "friendly_name": hs_device.get("friendlyName"),
         "functions": description.get("functions", []),
+        "states": processed_states,
     }
     return HubSpaceDevice(**dev_dict)

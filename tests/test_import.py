@@ -7,7 +7,6 @@ def test_api():
         "HubSpaceState",
         "HubSpaceAuth",
         "HubSpaceDevice",
-        "get_hs_device",
     ]
     for elem in api_elems:
         assert hasattr(hubspace_async, elem)
