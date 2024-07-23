@@ -10,7 +10,7 @@ import re
 from collections import namedtuple
 from typing import Final, Optional
 
-import httpx
+from aiohttp import ClientSession, ClientResponse
 
 from .const import HUBSPACE_DEFAULT_USERAGENT
 
@@ -40,7 +40,7 @@ TOKEN_TIMEOUT: Final[int] = 118
 auth_challenge = namedtuple("AuthChallenge", ["challenge", "verifier"])
 
 
-class HubSpaceAuth(httpx.Auth):
+class HubSpaceAuth:
     """Authentication against the HubSpace API
 
     This class follows the HubSpace authentication workflow and utilizes
@@ -55,11 +55,8 @@ class HubSpaceAuth(httpx.Auth):
         self.__token: Optional[str] = None
         self.token_expiry: Optional[float] = None
 
-    def sync_auth_flow(self, request) -> None:
-        raise RuntimeError("Only async is implemented")
-
     async def webapp_login(
-        self, challenge: auth_challenge, client: httpx.AsyncClient
+        self, challenge: auth_challenge, client: ClientSession
     ) -> str:
         """Get the code used for generating the token
 
@@ -74,14 +71,15 @@ class HubSpaceAuth(httpx.Auth):
             "code_challenge_method": "S256",
             "scope": "openid offline_access",
         }
-        response: httpx.Response = await client.get(
+        response: ClientResponse = await client.get(
             HUBSPACE_OPENID_URL, params=code_params
         )
         response.raise_for_status()
+        resp_text = await response.text()
         return await self.generate_code(
-            re.search("session_code=(.+?)&", response.text).group(1),
-            re.search("execution=(.+?)&", response.text).group(1),
-            re.search("tab_id=(.+?)&", response.text).group(1),
+            re.search("session_code=(.+?)&", resp_text).group(1),
+            re.search("execution=(.+?)&", resp_text).group(1),
+            re.search("tab_id=(.+?)&", resp_text).group(1),
             client,
         )
 
@@ -95,7 +93,7 @@ class HubSpaceAuth(httpx.Auth):
         return auth_challenge(code_challenge, code_verifier)
 
     async def generate_code(
-        self, session_code: str, execution: str, tab_id: str, client: httpx.AsyncClient
+        self, session_code: str, execution: str, tab_id: str, client: ClientSession
     ) -> str:
         """Finalize login to HubSpace page
 
@@ -124,15 +122,15 @@ class HubSpaceAuth(httpx.Auth):
             params=params,
             data=auth_data,
             headers=headers,
-            follow_redirects=False,
+            allow_redirects=False,
         )
-        if response.status_code != 302:
+        if response.status != 302:
             response.raise_for_status()
         return re.search("&code=(.+?)$", response.headers.get("location")).group(1)
 
     @staticmethod
     async def generate_refresh_token(
-        code: str, challenge: auth_challenge, client: httpx.AsyncClient
+        code: str, challenge: auth_challenge, client: ClientSession
     ) -> str:
         """Generate the refresh token from the given code and challenge
 
@@ -151,10 +149,10 @@ class HubSpaceAuth(httpx.Auth):
             HUBSPACE_TOKEN_URL, headers=HUBSPACE_TOKEN_HEADERS, data=data
         )
         response.raise_for_status()
-        return response.json().get("refresh_token")
+        return (await response.json()).get("refresh_token")
 
     @staticmethod
-    async def generate_token(client: httpx.AsyncClient, refresh_token: str) -> str:
+    async def generate_token(client: ClientSession, refresh_token: str) -> str:
         """Generate a token from the refresh token
 
         :param client: async client for making request
@@ -170,34 +168,32 @@ class HubSpaceAuth(httpx.Auth):
             HUBSPACE_TOKEN_URL, headers=HUBSPACE_TOKEN_HEADERS, data=data
         )
         response.raise_for_status()
-        return response.json().get("id_token")
+        return (await response.json()).get("id_token")
 
-    async def async_auth_flow(self, request):
+    async def token(self, client: ClientSession) -> str:
         async with self._async_lock:
-            async with httpx.AsyncClient() as client:
-                if not self.__refresh_token:
-                    logger.debug(
-                        "Refresh token not present. Generating a new refresh token"
-                    )
-                    challenge = await HubSpaceAuth.generate_challenge_data()
-                    logger.debug("Challenge information: %s", challenge)
-                    code: str = await self.webapp_login(challenge, client)
-                    logger.debug("Successfully generated an auth code")
-                    self.__refresh_token = await self.generate_refresh_token(
-                        code, challenge, client
-                    )
-                    logger.debug("Successfully generated a refresh token")
-                if (
-                    not self.token_expiry
-                    or datetime.datetime.now().timestamp() >= self.token_expiry
-                ):
-                    logger.debug("Token has not been generated or is expired")
-                    self.__token = await self.generate_token(
-                        client, self.__refresh_token
-                    )
-                    self.token_expiry = (
-                        datetime.datetime.now().timestamp() + TOKEN_TIMEOUT
-                    )
-                    logger.debug("Token has been successfully generated")
-            request.headers["Authorization"] = f"Bearer {self.__token}"
-        yield request
+            if not self.__refresh_token:
+                logger.debug(
+                    "Refresh token not present. Generating a new refresh token"
+                )
+                challenge = await HubSpaceAuth.generate_challenge_data()
+                logger.debug("Challenge information: %s", challenge)
+                code: str = await self.webapp_login(challenge, client)
+                logger.debug("Successfully generated an auth code")
+                self.__refresh_token = await self.generate_refresh_token(
+                    code, challenge, client
+                )
+                logger.debug("Successfully generated a refresh token")
+            if (
+                not self.token_expiry
+                or datetime.datetime.now().timestamp() >= self.token_expiry
+            ):
+                logger.debug("Token has not been generated or is expired")
+                self.__token = await self.generate_token(
+                    client, self.__refresh_token
+                )
+                self.token_expiry = (
+                    datetime.datetime.now().timestamp() + TOKEN_TIMEOUT
+                )
+                logger.debug("Token has been successfully generated")
+        return self.__token
