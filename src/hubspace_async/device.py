@@ -38,6 +38,7 @@ class HubSpaceDevice:
     friendly_name: str
     functions: list[dict]
     states: list[HubSpaceState]
+    children: list[str]
 
     def __hash__(self):
         return hash((self.id, self.friendly_name))
@@ -69,6 +70,8 @@ class HubSpaceDevice:
             self.device_class = "light"
         if self.default_image == "a19-e26-color-cct-60w-smd-frosted-icon":
             self.model = "12A19060WRGBWH2"
+        if self.device_class == "switch" and self.default_name == "Dimmer":
+            self.device_class = "light"
 
 
 def get_hs_device(hs_device: dict[str, Any]) -> HubSpaceDevice:
@@ -95,5 +98,6 @@ def get_hs_device(hs_device: dict[str, Any]) -> HubSpaceDevice:
         "friendly_name": hs_device.get("friendlyName"),
         "functions": description.get("functions", []),
         "states": processed_states,
+        "children": hs_device.get("children", []),
     }
     return HubSpaceDevice(**dev_dict)
