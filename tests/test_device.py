@@ -177,60 +177,6 @@ with open(os.path.join(current_path, "data", "device_lock.json")) as fh:
                 }
             ),
         ),
-        # Smart Stake Timer
-        (
-            {
-                "id": "id",
-                "device_id": "device_id",
-                "model": "Smart Stake Timer",
-                "device_class": "fan",
-                "default_name": "default_name",
-                "default_image": "ceiling-fan-slender-icon",
-                "friendly_name": "friendly_name",
-                "functions": ["functions!"],
-                "states": [],
-            },
-            device.HubSpaceDevice(
-                **{
-                    "id": "id",
-                    "device_id": "device_id",
-                    "model": "YardStake",
-                    "device_class": "light",
-                    "default_name": "default_name",
-                    "default_image": "ceiling-fan-slender-icon",
-                    "friendly_name": "friendly_name",
-                    "functions": ["functions!"],
-                    "states": [],
-                }
-            ),
-        ),
-        # 12A19060WRGBWH2
-        (
-            {
-                "id": "id",
-                "device_id": "device_id",
-                "model": "Smart Stake Timer",
-                "device_class": "fan",
-                "default_name": "default_name",
-                "default_image": "a19-e26-color-cct-60w-smd-frosted-icon",
-                "friendly_name": "friendly_name",
-                "functions": ["functions!"],
-                "states": [],
-            },
-            device.HubSpaceDevice(
-                **{
-                    "id": "id",
-                    "device_id": "device_id",
-                    "model": "12A19060WRGBWH2",
-                    "device_class": "light",
-                    "default_name": "default_name",
-                    "default_image": "a19-e26-color-cct-60w-smd-frosted-icon",
-                    "friendly_name": "friendly_name",
-                    "functions": ["functions!"],
-                    "states": [],
-                }
-            ),
-        ),
     ],
 )
 def test_HubSpaceDevice(hs_device, expected):

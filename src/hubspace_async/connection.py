@@ -1,11 +1,12 @@
 __all__ = ["HubSpaceConnection"]
 
+import copy
 import datetime
 import logging
 from contextlib import suppress
 from dataclasses import asdict
 from typing import Any, Final, Optional
-import copy
+
 from aiohttp import ClientSession
 
 from .auth import HubSpaceAuth
@@ -100,10 +101,12 @@ class HubSpaceConnection:
         """Lookup the account ID associated with the login"""
         logger.debug("Querying API for account id")
         token = await self._auth.token(self.client)
-        headers = get_headers(**{
-            "authorization": f"Bearer {token}",
-            "host": "api2.afero.net",
-        })
+        headers = get_headers(
+            **{
+                "authorization": f"Bearer {token}",
+                "host": "api2.afero.net",
+            }
+        )
         response = await self.client.get(HUBSPACE_ACCOUNT_ID_URL, headers=headers)
         account_id = (
             (await response.json())
@@ -117,10 +120,12 @@ class HubSpaceConnection:
         """Query the API"""
         logger.debug("Querying API for all data")
         token = await self._auth.token(self.client)
-        headers = get_headers(**{
-            "authorization": f"Bearer {token}",
-            "host": HUBSPACE_DATA_HOST,
-        })
+        headers = get_headers(
+            **{
+                "authorization": f"Bearer {token}",
+                "host": HUBSPACE_DATA_HOST,
+            }
+        )
         params = {"expansions": "state"}
         response = await self.client.get(
             HUBSPACE_DATA_URL.format(await self.account_id),
@@ -194,10 +199,12 @@ class HubSpaceConnection:
         logger.debug("Querying API for device [%s] states", device_id)
         url = HUBSPACE_DEVICE_STATE.format(await self.account_id, device_id)
         token = await self._auth.token(self.client)
-        headers = get_headers(**{
-            "authorization": f"Bearer {token}",
-            "host": HUBSPACE_DATA_HOST,
-        })
+        headers = get_headers(
+            **{
+                "authorization": f"Bearer {token}",
+                "host": HUBSPACE_DATA_HOST,
+            }
+        )
         response = await self.client.get(url, headers=headers)
         response.raise_for_status()
         states = []
@@ -228,11 +235,13 @@ class HubSpaceConnection:
             "Update the device [%s] with new states: %s", device_id, new_states
         )
         token = await self._auth.token(self.client)
-        headers = get_headers(**{
-            "authorization": f"Bearer {token}",
-            "host": HUBSPACE_DATA_HOST,
-            "content-type": "application/json; charset=utf-8",
-        })
+        headers = get_headers(
+            **{
+                "authorization": f"Bearer {token}",
+                "host": HUBSPACE_DATA_HOST,
+                "content-type": "application/json; charset=utf-8",
+            }
+        )
         payload_states = []
         for state in new_states:
             state.lastUpdateTime = int(datetime.datetime.now().timestamp())

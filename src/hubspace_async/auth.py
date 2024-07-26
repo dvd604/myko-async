@@ -177,7 +177,6 @@ class HubSpaceAuth:
                     "Refresh token not present. Generating a new refresh token"
                 )
                 challenge = await HubSpaceAuth.generate_challenge_data()
-                logger.debug("Challenge information: %s", challenge)
                 code: str = await self.webapp_login(challenge, client)
                 logger.debug("Successfully generated an auth code")
                 self.__refresh_token = await self.generate_refresh_token(

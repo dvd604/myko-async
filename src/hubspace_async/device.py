@@ -4,7 +4,7 @@ __all__ = [
     "get_hs_device",
 ]
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -36,9 +36,10 @@ class HubSpaceDevice:
     default_name: str
     default_image: str
     friendly_name: str
-    functions: list[dict]
-    states: list[HubSpaceState]
-    children: list[str]
+    functions: list[dict] = field(default=list)
+    states: list[HubSpaceState] = field(default=list)
+    children: list[str] = field(default=list)
+    manufacturerName: Optional[str] = field(default=None)
 
     def __hash__(self):
         return hash((self.id, self.friendly_name))
@@ -67,11 +68,8 @@ class HubSpaceDevice:
             self.model = "TagerFan"
         if self.model == "Smart Stake Timer":
             self.model = "YardStake"
-            self.device_class = "light"
         if self.default_image == "a19-e26-color-cct-60w-smd-frosted-icon":
             self.model = "12A19060WRGBWH2"
-        if self.device_class == "switch" and self.default_name == "Dimmer":
-            self.device_class = "light"
 
 
 def get_hs_device(hs_device: dict[str, Any]) -> HubSpaceDevice:
@@ -99,5 +97,6 @@ def get_hs_device(hs_device: dict[str, Any]) -> HubSpaceDevice:
         "functions": description.get("functions", []),
         "states": processed_states,
         "children": hs_device.get("children", []),
+        "manufacturerName": device.get("manufacturerName"),
     }
     return HubSpaceDevice(**dev_dict)
