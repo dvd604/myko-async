@@ -1,5 +1,3 @@
-_hs_api_default:
-
 ==============
 hubspace-async
 ==============
@@ -25,13 +23,31 @@ Gather all devices from the API
 
 .. code-block:: python
 
+    import logging
 
-   from hubspace_async import connection
-   import asyncio
+    import hubspace_async
+    import asyncio
 
 
-   conn = connection.HubSpaceConnection("username", "password")
-   loop.run_until_complete(conn.populate_data())
+    # TRACE messages in logs
+    hubspace_async.logger.setLevel(logging.HS_TRACE)
+    hubspace_async.logger.addHandler(logging.StreamHandler())
+
+    try:
+        loop = asyncio.get_event_loop()
+    except RunTimeError:
+        loop = asyncio.new_event_loop()
+
+    username = "<username>"
+    password = "<password>
+
+    async def get_devices(username, password):
+        connection = hubspace_async.HubSpaceConnection(username, password)
+        return await connection.devices
+
+
+
+    loop.run_until_complete(get_devices(username, password))
 
 A sample output would look like
 

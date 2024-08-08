@@ -9,6 +9,7 @@ import os
 import re
 from collections import namedtuple
 from typing import Final, Optional
+from urllib.parse import parse_qs, urlparse
 
 from aiohttp import ClientResponse, ClientSession
 
@@ -71,15 +72,35 @@ class HubSpaceAuth:
             "code_challenge_method": "S256",
             "scope": "openid offline_access",
         }
+        logger.hs_trace(
+            ("URL: %s" "\n\tparams: %s"),
+            HUBSPACE_OPENID_URL,
+            code_params,
+        )
         response: ClientResponse = await client.get(
             HUBSPACE_OPENID_URL, params=code_params
         )
+        logger.hs_trace("Status code: %s", response.status)
         response.raise_for_status()
         resp_text = await response.text()
+        session_code = re.search("session_code=(.+?)&", resp_text).group(1)
+        execution = re.search("execution=(.+?)&", resp_text).group(1)
+        tab_id = re.search("tab_id=(.+?)&", resp_text).group(1)
+        logger.hs_trace(
+            (
+                "WebApp Login:"
+                "\n\tSession Code: %s"
+                "\n\tExecution: %s"
+                "\n\tTab ID:%s"
+            ),
+            session_code,
+            execution,
+            tab_id,
+        )
         return await self.generate_code(
-            re.search("session_code=(.+?)&", resp_text).group(1),
-            re.search("execution=(.+?)&", resp_text).group(1),
-            re.search("tab_id=(.+?)&", resp_text).group(1),
+            session_code,
+            execution,
+            tab_id,
             client,
         )
 
@@ -90,7 +111,9 @@ class HubSpaceAuth:
         code_challenge = hashlib.sha256(code_verifier.encode("utf-8")).digest()
         code_challenge = base64.urlsafe_b64encode(code_challenge).decode("utf-8")
         code_challenge = code_challenge.replace("=", "")
-        return auth_challenge(code_challenge, code_verifier)
+        chal = auth_challenge(code_challenge, code_verifier)
+        logger.hs_trace("Challenge information: %s", chal)
+        return chal
 
     async def generate_code(
         self, session_code: str, execution: str, tab_id: str, client: ClientSession
@@ -102,6 +125,7 @@ class HubSpaceAuth:
         :param tab_id: Session code during form interaction
         :param client: async client for making request
         """
+        logger.hs_trace("Generating code")
         params = {
             "session_code": session_code,
             "execution": execution,
@@ -117,6 +141,13 @@ class HubSpaceAuth:
             "password": self.__password,
             "credentialId": "",
         }
+        logger.hs_trace(
+            ("URL: %s" "\n\tparams: %s" "\n\tdata: %s" "\n\theaders: %s"),
+            HUBSPACE_CODE_URL,
+            params,
+            auth_data,
+            headers,
+        )
         response = await client.post(
             HUBSPACE_CODE_URL,
             params=params,
@@ -124,9 +155,14 @@ class HubSpaceAuth:
             headers=headers,
             allow_redirects=False,
         )
+        logger.hs_trace("Status code: %s", response.status)
+        logger.hs_trace("Location: %s", response.headers.get("location"))
         if response.status != 302:
             response.raise_for_status()
-        return re.search("&code=(.+?)$", response.headers.get("location")).group(1)
+        parsed_url = urlparse(response.headers.get("location"))
+        code = parse_qs(parsed_url.query)["code"][0]
+        logger.hs_trace("Code: %s", code)
+        return code
 
     @staticmethod
     async def generate_refresh_token(
@@ -138,6 +174,7 @@ class HubSpaceAuth:
         :param challenge: Challenge data for connection and approving
         :param client: async client for making request
         """
+        logger.hs_trace("Generating refresh token")
         data = {
             "grant_type": "authorization_code",
             "code": code,
@@ -145,11 +182,21 @@ class HubSpaceAuth:
             "code_verifier": challenge.verifier,
             "client_id": HUBSPACE_DEFAULT_CLIENT_ID,
         }
+        logger.hs_trace(
+            ("URL: %s" "\n\tdata: %s" "\n\theaders: %s"),
+            HUBSPACE_TOKEN_URL,
+            data,
+            HUBSPACE_TOKEN_HEADERS,
+        )
         response = await client.post(
             HUBSPACE_TOKEN_URL, headers=HUBSPACE_TOKEN_HEADERS, data=data
         )
+        logger.hs_trace("Status code: %s", response.status)
         response.raise_for_status()
-        return (await response.json()).get("refresh_token")
+        resp_json = await response.json()
+        refresh_token = resp_json.get("refresh_token")
+        logger.hs_trace("JSON response: %s", resp_json)
+        return refresh_token
 
     @staticmethod
     async def generate_token(client: ClientSession, refresh_token: str) -> str:
@@ -158,17 +205,28 @@ class HubSpaceAuth:
         :param client: async client for making request
         :param refresh_token: Refresh token for generating request tokens
         """
+        logger.hs_trace("Generating token")
         data = {
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
             "scope": "openid email offline_access profile",
             "client_id": "hubspace_android",
         }
+        logger.hs_trace(
+            ("URL: %s" "\n\tdata: %s" "\n\theaders: %s"),
+            HUBSPACE_TOKEN_URL,
+            data,
+            HUBSPACE_TOKEN_HEADERS,
+        )
         response = await client.post(
             HUBSPACE_TOKEN_URL, headers=HUBSPACE_TOKEN_HEADERS, data=data
         )
+        logger.hs_trace("Status code: %s", response.status)
         response.raise_for_status()
-        return (await response.json()).get("id_token")
+        resp_json = await response.json()
+        auth_token = resp_json.get("id_token")
+        logger.hs_trace("JSON response: %s", resp_json)
+        return auth_token
 
     async def token(self, client: ClientSession) -> str:
         async with self._async_lock:
