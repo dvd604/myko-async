@@ -87,11 +87,12 @@ class HubSpaceAuth:
         logger.hs_trace("Status code: %s", response.status)
         response.raise_for_status()
         resp_text = await response.text()
-        if resp_text is None:
+        try:
+            session_code = re.search("session_code=(.+?)&", resp_text).group(1)
+            execution = re.search("execution=(.+?)&", resp_text).group(1)
+            tab_id = re.search("tab_id=(.+?)&", resp_text).group(1)
+        except TypeError:
             raise InvalidAuth("Unable to authenticate with the supplied username / password")
-        session_code = re.search("session_code=(.+?)&", resp_text).group(1)
-        execution = re.search("execution=(.+?)&", resp_text).group(1)
-        tab_id = re.search("tab_id=(.+?)&", resp_text).group(1)
         logger.hs_trace(
             (
                 "WebApp Login:"
