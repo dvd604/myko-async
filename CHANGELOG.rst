@@ -2,9 +2,13 @@
 Changelog
 =========
 
-Version 0.2.1
+Version 0.2.2
 =============
  - Raise exception when an authentication failure occurs
+
+Version 0.2.1
+=============
+ - Raise exception when unable to parse data from initial connection
 
 Version 0.1.1
 =============

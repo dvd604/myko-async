@@ -1,4 +1,4 @@
-__all__ = ["HubSpaceAuth", "InvalidAuth"]
+__all__ = ["HubSpaceAuth", "InvalidAuth", "InvalidResponse"]
 
 import asyncio
 import base64
@@ -42,6 +42,10 @@ auth_challenge = namedtuple("AuthChallenge", ["challenge", "verifier"])
 
 
 class InvalidAuth(Exception):
+    pass
+
+
+class InvalidResponse(Exception):
     pass
 
 
@@ -92,7 +96,9 @@ class HubSpaceAuth:
             execution = re.search("execution=(.+?)&", resp_text).group(1)
             tab_id = re.search("tab_id=(.+?)&", resp_text).group(1)
         except TypeError:
-            raise InvalidAuth("Unable to authenticate with the supplied username / password")
+            raise InvalidAuth(
+                "Unable to parse initial response from HubSpace. Please open an issue"
+            )
         logger.hs_trace(
             (
                 "WebApp Login:"
@@ -163,11 +169,16 @@ class HubSpaceAuth:
             allow_redirects=False,
         )
         logger.hs_trace("Status code: %s", response.status)
-        logger.hs_trace("Location: %s", response.headers.get("location"))
         if response.status != 302:
             response.raise_for_status()
-        parsed_url = urlparse(response.headers.get("location"))
-        code = parse_qs(parsed_url.query)["code"][0]
+        try:
+            parsed_url = urlparse(response.headers["location"])
+            code = parse_qs(parsed_url.query)["code"][0]
+        except KeyError:
+            raise InvalidAuth(
+                "Unable to authenticate with the supplied username / password"
+            )
+        logger.hs_trace("Location: %s", response.headers.get("location"))
         logger.hs_trace("Code: %s", code)
         return code
 
