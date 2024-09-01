@@ -4,12 +4,13 @@ __all__ = [
     "HubSpaceAuth",
     "HubSpaceDevice",
     "HubSpaceRoom",
+    "InvalidAuth",
 ]
 
 import logging
 from importlib.metadata import PackageNotFoundError, version
 
-from .auth import HubSpaceAuth
+from .auth import HubSpaceAuth, InvalidAuth
 from .connection import HubSpaceConnection
 from .device import HubSpaceDevice, HubSpaceState
 from .room import HubSpaceRoom

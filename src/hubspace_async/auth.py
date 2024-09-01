@@ -1,4 +1,4 @@
-__all__ = ["HubSpaceAuth"]
+__all__ = ["HubSpaceAuth", "InvalidAuth"]
 
 import asyncio
 import base64
@@ -39,6 +39,10 @@ TOKEN_TIMEOUT: Final[int] = 118
 
 
 auth_challenge = namedtuple("AuthChallenge", ["challenge", "verifier"])
+
+
+class InvalidAuth(Exception):
+    pass
 
 
 class HubSpaceAuth:
@@ -83,6 +87,8 @@ class HubSpaceAuth:
         logger.hs_trace("Status code: %s", response.status)
         response.raise_for_status()
         resp_text = await response.text()
+        if resp_text is None:
+            raise InvalidAuth("Unable to authenticate with the supplied username / password")
         session_code = re.search("session_code=(.+?)&", resp_text).group(1)
         execution = re.search("execution=(.+?)&", resp_text).group(1)
         tab_id = re.search("tab_id=(.+?)&", resp_text).group(1)
