@@ -7,6 +7,10 @@ def test_api():
         "HubSpaceState",
         "HubSpaceAuth",
         "HubSpaceDevice",
+        "HubSpaceRoom",
+        "InvalidAuth",
+        "InvalidResponse",
     ]
+    assert len(api_elems) == len(hubspace_async.__all__)
     for elem in api_elems:
         assert hasattr(hubspace_async, elem)

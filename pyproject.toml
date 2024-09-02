@@ -8,7 +8,7 @@ version = "0.2.2"
 dependencies = [
   "aiohttp",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
   {name = "Chris Dohmen", email = "chris.dohmen11@gmail.com"}
 ]
@@ -22,7 +22,6 @@ keywords = ["HubSpace"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -33,7 +32,9 @@ test = [
   "pytest",
   "pytest-mock",
   "pytest-cov",
-  "responses"
+  "pytest-aioresponses",
+  "anyio",
+  "beautifulsoup4",
 ]
 
 [project.urls]
