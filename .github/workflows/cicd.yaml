@@ -38,12 +38,15 @@ jobs:
     name: upload release to PyPI
     runs-on: ubuntu-latest
     if: github.ref_name == github.event.repository.default_branch
-    # Specifying a GitHub environment is optional, but strongly encouraged
-    environment: release
     permissions:
       # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
     steps:
-      # retrieve your distributions here
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Create files
+        run: |
+          pip install tox
+          tox -e build
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
