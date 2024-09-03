@@ -4,9 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hubspace-async"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
   "aiohttp",
+  "beautifulsoup4",
 ]
 requires-python = ">=3.10"
 authors = [
@@ -34,7 +35,6 @@ test = [
   "pytest-cov",
   "pytest-aioresponses",
   "anyio",
-  "beautifulsoup4",
 ]
 
 [project.urls]
