@@ -262,7 +262,7 @@ async def extract_login_data(page: str) -> auth_sess_data:
 
     :param page: the response from performing a GET against HUBSPACE_OPENID_URL
     """
-    auth_page = BeautifulSoup(page)
+    auth_page = BeautifulSoup(page, features="html.parser")
     login_form = auth_page.find(id="kc-form-login")
     if not login_form:
         raise InvalidResponse("Unable to parse login page")
