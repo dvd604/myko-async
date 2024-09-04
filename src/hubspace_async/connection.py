@@ -107,14 +107,16 @@ class HubSpaceConnection:
                 "host": "api2.afero.net",
             }
         )
-        response = await self.client.get(HUBSPACE_ACCOUNT_ID_URL, headers=headers)
-        account_id = (
-            (await response.json())
-            .get("accountAccess")[0]
-            .get("account")
-            .get("accountId")
-        )
-        return account_id
+        async with self.client.get(
+            HUBSPACE_ACCOUNT_ID_URL, headers=headers
+        ) as response:
+            account_id = (
+                (await response.json())
+                .get("accountAccess")[0]
+                .get("account")
+                .get("accountId")
+            )
+            return account_id
 
     async def _get_api_data(self) -> list[dict[str, str]]:
         """Query the API"""
@@ -127,14 +129,14 @@ class HubSpaceConnection:
             }
         )
         params = {"expansions": "state"}
-        response = await self.client.get(
+        async with self.client.get(
             HUBSPACE_DATA_URL.format(await self.account_id),
             headers=headers,
             params=params,
-        )
-        response.raise_for_status()
-        data = await response.json()
-        return data
+        ) as response:
+            response.raise_for_status()
+            data = await response.json()
+            return data
 
     async def populate_data(self) -> None:
         """Query the API and populate the data"""
@@ -205,22 +207,22 @@ class HubSpaceConnection:
                 "host": HUBSPACE_DATA_HOST,
             }
         )
-        response = await self.client.get(url, headers=headers)
-        response.raise_for_status()
-        states = []
-        for state in (await response.json())["values"]:
-            try:
-                states.append(
-                    HubSpaceState(
-                        functionClass=state["functionClass"],
-                        lastUpdateTime=state["lastUpdateTime"],
-                        functionInstance=state.get("functionInstance"),
-                        value=state["value"],
+        async with self.client.get(url, headers=headers) as response:
+            response.raise_for_status()
+            states = []
+            for state in (await response.json())["values"]:
+                try:
+                    states.append(
+                        HubSpaceState(
+                            functionClass=state["functionClass"],
+                            lastUpdateTime=state["lastUpdateTime"],
+                            functionInstance=state.get("functionInstance"),
+                            value=state["value"],
+                        )
                     )
-                )
-            except KeyError:
-                logger.debug("Skipping the state %s", state["functionClass"])
-        return states
+                except KeyError:
+                    logger.debug("Skipping the state %s", state["functionClass"])
+            return states
 
     async def set_device_states(
         self, device_id: str, new_states: list[HubSpaceState]
@@ -248,8 +250,8 @@ class HubSpaceConnection:
             payload_states.append(asdict(state))
         payload = {"metadeviceId": str(device_id), "values": payload_states}
         url = HUBSPACE_DEVICE_STATE.format(await self.account_id, device_id)
-        response = await self.client.put(url, headers=headers, json=payload)
-        response.raise_for_status()
+        async with self.client.put(url, headers=headers, json=payload) as response:
+            response.raise_for_status()
 
     async def set_device_state(self, device_id: str, state: HubSpaceState) -> None:
         """Sets a state for the given device

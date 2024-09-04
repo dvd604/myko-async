@@ -84,3 +84,28 @@ may not require this field.
     )
    child_id = "abc123"
    loop.run_until_complete(conn.set_device_state(child_id, new_states))
+
+
+CLI Commands
+============
+
+A CLI is provided for testing your credentials and connection to hubspace.
+For all commands, click needs to be installed. The easiest way to install
+click is by using the `cli` extras.
+
+``pip install hubspace-async[cli]``
+
+
+Testing Auth
+------------
+To test auth, run the following command:
+``python -m hubspace_async.cli --username "<username>" --password "<password>" auth-flow``
+
+If successful, the message "Token has been successfully generated" will be displayed.
+
+Testing Connectivity
+--------------------
+To test connectivity, run the following command:
+``python -m hubspace_async.cli --username "<username>" --password "<password>" auth-flow``
+
+If successful, an account id with several hyphens will appear.

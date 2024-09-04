@@ -11,7 +11,7 @@ from collections import namedtuple
 from typing import Final, Optional
 from urllib.parse import parse_qs, urlparse
 
-from aiohttp import ClientResponse, ClientSession
+from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
 from .const import HUBSPACE_DEFAULT_USERAGENT
@@ -99,29 +99,27 @@ class HubSpaceAuth:
             HUBSPACE_OPENID_URL,
             code_params,
         )
-        response: ClientResponse = await client.get(
-            HUBSPACE_OPENID_URL, params=code_params
-        )
-        logger.hs_trace(STATUS_CODE, response.status)
-        response.raise_for_status()
-        login_data = await extract_login_data((await response.text()))
-        logger.hs_trace(
-            (
-                "WebApp Login:"
-                "\n\tSession Code: %s"
-                "\n\tExecution: %s"
-                "\n\tTab ID:%s"
-            ),
-            login_data.session_code,
-            login_data.execution,
-            login_data.tab_id,
-        )
-        return await self.generate_code(
-            login_data.session_code,
-            login_data.execution,
-            login_data.tab_id,
-            client,
-        )
+        async with client.get(HUBSPACE_OPENID_URL, params=code_params) as response:
+            logger.hs_trace(STATUS_CODE, response.status)
+            response.raise_for_status()
+            login_data = await extract_login_data((await response.text()))
+            logger.hs_trace(
+                (
+                    "WebApp Login:"
+                    "\n\tSession Code: %s"
+                    "\n\tExecution: %s"
+                    "\n\tTab ID:%s"
+                ),
+                login_data.session_code,
+                login_data.execution,
+                login_data.tab_id,
+            )
+            return await self.generate_code(
+                login_data.session_code,
+                login_data.execution,
+                login_data.tab_id,
+                client,
+            )
 
     @staticmethod
     async def generate_challenge_data() -> auth_challenge:
@@ -169,28 +167,28 @@ class HubSpaceAuth:
             auth_data,
             headers,
         )
-        response = await client.post(
+        async with client.post(
             HUBSPACE_CODE_URL,
             params=params,
             data=auth_data,
             headers=headers,
             allow_redirects=False,
-        )
-        logger.hs_trace(STATUS_CODE, response.status)
-        if response.status != 302:
-            raise InvalidResponse(
-                f"Unable to process the result from {response.url}: {response.status}"
-            )
-        try:
-            parsed_url = urlparse(response.headers["location"])
-            code = parse_qs(parsed_url.query)["code"][0]
-        except KeyError:
-            raise InvalidAuth(
-                "Unable to authenticate with the supplied username / password"
-            )
-        logger.hs_trace("Location: %s", response.headers.get("location"))
-        logger.hs_trace("Code: %s", code)
-        return code
+        ) as response:
+            logger.hs_trace(STATUS_CODE, response.status)
+            if response.status != 302:
+                raise InvalidResponse(
+                    f"Unable to process the result from {response.url}: {response.status}"
+                )
+            try:
+                parsed_url = urlparse(response.headers["location"])
+                code = parse_qs(parsed_url.query)["code"][0]
+            except KeyError:
+                raise InvalidAuth(
+                    "Unable to authenticate with the supplied username / password"
+                )
+            logger.hs_trace("Location: %s", response.headers.get("location"))
+            logger.hs_trace("Code: %s", code)
+            return code
 
     @staticmethod
     async def generate_refresh_token(
@@ -218,18 +216,18 @@ class HubSpaceAuth:
             data,
             HUBSPACE_TOKEN_HEADERS,
         )
-        response = await client.post(
+        async with client.post(
             HUBSPACE_TOKEN_URL, headers=HUBSPACE_TOKEN_HEADERS, data=data
-        )
-        logger.hs_trace(STATUS_CODE, response.status)
-        response.raise_for_status()
-        resp_json = await response.json()
-        try:
-            refresh_token = resp_json["refresh_token"]
-        except KeyError:
-            raise InvalidResponse("Unable to extract refresh token")
-        logger.hs_trace("JSON response: %s", resp_json)
-        return refresh_token
+        ) as response:
+            logger.hs_trace(STATUS_CODE, response.status)
+            response.raise_for_status()
+            resp_json = await response.json()
+            try:
+                refresh_token = resp_json["refresh_token"]
+            except KeyError:
+                raise InvalidResponse("Unable to extract refresh token")
+            logger.hs_trace("JSON response: %s", resp_json)
+            return refresh_token
 
     async def perform_initial_login(self, client: ClientSession) -> str:
         """Login to generate a refresh token
@@ -293,7 +291,7 @@ async def generate_token(client: ClientSession, refresh_token: str) -> token_dat
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
         "scope": "openid email offline_access profile",
-        "client_id": "hubspace_android",
+        "client_id": HUBSPACE_DEFAULT_CLIENT_ID,
     }
     logger.hs_trace(
         ("URL: %s" "\n\tdata: %s" "\n\theaders: %s"),
@@ -301,15 +299,17 @@ async def generate_token(client: ClientSession, refresh_token: str) -> token_dat
         data,
         HUBSPACE_TOKEN_HEADERS,
     )
-    response = await client.post(
+    async with client.post(
         HUBSPACE_TOKEN_URL, headers=HUBSPACE_TOKEN_HEADERS, data=data
-    )
-    logger.hs_trace("Status code: %s", response.status)
-    response.raise_for_status()
-    resp_json = await response.json()
-    try:
-        auth_token = resp_json["id_token"]
-    except KeyError:
-        raise InvalidResponse("Unable to extract the token")
-    logger.hs_trace("JSON response: %s", resp_json)
-    return token_data(auth_token, datetime.datetime.now().timestamp() + TOKEN_TIMEOUT)
+    ) as response:
+        logger.hs_trace("Status code: %s", response.status)
+        response.raise_for_status()
+        resp_json = await response.json()
+        try:
+            auth_token = resp_json["id_token"]
+        except KeyError:
+            raise InvalidResponse("Unable to extract the token")
+        logger.hs_trace("JSON response: %s", resp_json)
+        return token_data(
+            auth_token, datetime.datetime.now().timestamp() + TOKEN_TIMEOUT
+        )
