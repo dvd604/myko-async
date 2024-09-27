@@ -99,10 +99,11 @@ class HubSpaceAuth:
             HUBSPACE_OPENID_URL,
             code_params,
         )
-        async with client.get(HUBSPACE_OPENID_URL, params=code_params) as response:
+        async with client.get(HUBSPACE_OPENID_URL, params=code_params, allow_redirects=False) as response:
             logger.hs_trace(STATUS_CODE, response.status)
             response.raise_for_status()
-            login_data = await extract_login_data((await response.text()))
+            contents = await response.text()
+            login_data = await extract_login_data(contents)
             logger.hs_trace(
                 (
                     "WebApp Login:"
@@ -261,8 +262,8 @@ async def extract_login_data(page: str) -> auth_sess_data:
     :param page: the response from performing a GET against HUBSPACE_OPENID_URL
     """
     auth_page = BeautifulSoup(page, features="html.parser")
-    login_form = auth_page.find(id="kc-form-login")
-    if not login_form:
+    login_form = auth_page.find("form", id="kc-form-login")
+    if login_form is None:
         raise InvalidResponse("Unable to parse login page")
     try:
         login_url: str = login_form.attrs["action"]
@@ -276,8 +277,8 @@ async def extract_login_data(page: str) -> auth_sess_data:
             login_data["execution"][0],
             login_data["tab_id"][0],
         )
-    except (KeyError, IndexError):
-        raise InvalidResponse("Unable to parse login url")
+    except (KeyError, IndexError) as err:
+        raise InvalidResponse("Unable to parse login url") from err
 
 
 async def generate_token(client: ClientSession, refresh_token: str) -> token_data:
