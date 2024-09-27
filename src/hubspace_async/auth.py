@@ -99,7 +99,9 @@ class HubSpaceAuth:
             HUBSPACE_OPENID_URL,
             code_params,
         )
-        async with client.get(HUBSPACE_OPENID_URL, params=code_params, allow_redirects=False) as response:
+        async with client.get(
+            HUBSPACE_OPENID_URL, params=code_params, allow_redirects=False
+        ) as response:
             logger.hs_trace(STATUS_CODE, response.status)
             response.raise_for_status()
             contents = await response.text()
